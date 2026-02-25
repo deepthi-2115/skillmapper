@@ -1,0 +1,301 @@
+ <!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Smart Profession Skill Analyzer</title>
+
+<style>
+body{
+    font-family: Arial, sans-serif;
+    margin:0;
+    background: linear-gradient(to right,#0f2027,#203a43,#2c5364);
+    color:white;
+}
+
+/* ===== HEADER ===== */
+.header{
+    text-align:center;
+    padding:40px 20px;
+}
+
+.title-main{
+    font-size:36px;
+    font-weight:800;
+    letter-spacing:3px;
+}
+
+.title-highlight{
+    font-size:44px;
+    font-weight:900;
+    background: linear-gradient(to right,#ffd700,#ff6a00);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing:4px;
+    margin-top:5px;
+}
+
+.subtitle{
+    margin-top:12px;
+    font-size:16px;
+    opacity:0.85;
+    letter-spacing:1px;
+}
+
+/* ===== CONTENT ===== */
+
+.container{
+    max-width:1200px;
+    margin:auto;
+    padding:20px;
+}
+
+.card{
+    background:white;
+    color:black;
+    padding:20px;
+    margin-bottom:20px;
+    border-radius:12px;
+    box-shadow:0 8px 20px rgba(0,0,0,0.3);
+}
+
+input,button{
+    width:100%;
+    padding:12px;
+    margin-top:10px;
+    border-radius:6px;
+    border:1px solid #ccc;
+    font-size:14px;
+}
+
+button{
+    background:#203a43;
+    color:white;
+    font-weight:bold;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#16222a;
+}
+
+.skill{
+    display:inline-block;
+    padding:7px 14px;
+    margin:5px;
+    border-radius:25px;
+    font-size:14px;
+}
+
+.required{ background:#ffc107; }
+.matched{ background:#28a745; color:white; }
+.missing{ background:#dc3545; color:white; }
+
+.roadmap-box{
+    background:#f8f9fa;
+    padding:15px;
+    margin-top:10px;
+    border-left:6px solid #203a43;
+    border-radius:8px;
+    color:black;
+}
+
+.section-title{
+    font-weight:bold;
+    margin-top:12px;
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- ===== HEADER ===== -->
+<div class="header">
+    <div class="title-main">SMART PROFESSION</div>
+    <div class="title-highlight">SKILL ANALYZER</div>
+    <div class="subtitle">AI-Inspired Career Gap & Roadmap Intelligence System</div>
+</div>
+
+<div class="container">
+
+<div class="card">
+<h2>📄 Upload Resume (.txt)</h2>
+<input type="file" id="resumeFile" accept=".txt">
+
+<h3>🎯 Enter Profession</h3>
+<input type="text" id="roleInput" placeholder="Doctor, Data Scientist, Architect, Chef, Pilot">
+
+<button onclick="analyzeResume()">Analyze Resume</button>
+</div>
+
+<div class="card">
+<h3>📌 Required Skills</h3>
+<div id="requiredSkills"></div>
+
+<h3>✅ Matched Skills</h3>
+<div id="matchedSkills"></div>
+
+<h3>❌ Missing Skills</h3>
+<div id="missingSkills"></div>
+</div>
+
+<div class="card">
+<h3>🗺 Personalized Skill Roadmap</h3>
+<div id="roadmap"></div>
+</div>
+
+</div>
+
+<script>
+
+/* ===== PROFESSION DATABASE (50+ Skills) ===== */
+
+const professionSkills = {
+
+doctor: ["anatomy","physiology","diagnosis","surgery","pharmacology","patient care","clinical research","medical ethics","emergency response","pathology"],
+
+lawyer: ["legal research","litigation","contract drafting","negotiation","case analysis","court practice","constitutional law","corporate law","legal writing","ethics"],
+
+teacher: ["lesson planning","classroom management","curriculum design","student assessment","communication","pedagogy","mentoring","subject knowledge","evaluation methods","technology integration"],
+
+software: ["programming","data structures","algorithms","system design","git","debugging","api development","cloud computing","database management","testing"],
+
+data: ["python","machine learning","statistics","sql","data visualization","deep learning","nlp","big data","feature engineering","model deployment"],
+
+chef: ["cooking techniques","food safety","menu planning","creativity","kitchen management","time management","inventory control","plating","nutrition knowledge","teamwork"],
+
+pilot: ["aviation knowledge","navigation","flight safety","situational awareness","decision making","communication","weather analysis","aircraft systems","emergency handling","regulations"],
+
+architect: ["autocad","3d modeling","building design","construction management","project planning","creativity","structural knowledge","urban planning","site analysis","materials science"],
+
+nurse: ["patient care","clinical skills","medical documentation","emergency response","vital monitoring","infection control","communication","compassion","team collaboration","medication administration"],
+
+marketing: ["seo","content marketing","social media","analytics","branding","market research","email marketing","advertising","campaign management","lead generation"],
+
+finance: ["financial analysis","accounting","budgeting","risk management","taxation","investment analysis","forecasting","portfolio management","auditing","compliance"],
+
+hr: ["recruitment","employee relations","performance management","training","labor laws","conflict resolution","talent management","communication","organizational development","policy design"],
+
+civil: ["structural analysis","surveying","construction planning","project management","autocad","quality control","cost estimation","site supervision","materials testing","safety standards"],
+
+mechanical: ["thermodynamics","machine design","cad","manufacturing","problem solving","fluid mechanics","automation","quality control","maintenance","technical drawing"],
+
+electrical: ["circuit design","power systems","electronics","control systems","troubleshooting","instrumentation","renewable energy","electrical safety","pcb design","signal processing"],
+
+default: ["communication","problem solving","teamwork","adaptability","critical thinking","leadership","time management","creativity","collaboration","professional ethics"]
+};
+
+/* ===== ANALYSIS ===== */
+
+function analyzeResume(){
+
+    const fileInput = document.getElementById("resumeFile");
+    const role = document.getElementById("roleInput").value.toLowerCase();
+
+    if(fileInput.files.length === 0){
+        alert("Please upload resume file.");
+        return;
+    }
+
+    if(role === ""){
+        alert("Please enter profession.");
+        return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = function(e){
+        const resumeText = e.target.result.toLowerCase();
+        processResume(resumeText, role);
+    };
+
+    reader.readAsText(fileInput.files[0]);
+}
+
+function getRequiredSkills(role){
+
+    for(const key in professionSkills){
+        if(role.includes(key)){
+            return professionSkills[key];
+        }
+    }
+
+    return professionSkills.default;
+}
+
+function processResume(resume, role){
+
+    const required = getRequiredSkills(role);
+    let matched = [];
+    let missing = [];
+
+    required.forEach(skill=>{
+        if(resume.includes(skill)){
+            matched.push(skill);
+        } else {
+            missing.push(skill);
+        }
+    });
+
+    displaySkills(required, matched, missing);
+    generateRoadmap(missing);
+}
+
+function displaySkills(required, matched, missing){
+
+    document.getElementById("requiredSkills").innerHTML =
+        required.map(s=>`<span class="skill required">${s}</span>`).join("");
+
+    document.getElementById("matchedSkills").innerHTML =
+        matched.length
+        ? matched.map(s=>`<span class="skill matched">${s}</span>`).join("")
+        : "No matched skills found.";
+
+    document.getElementById("missingSkills").innerHTML =
+        missing.length
+        ? missing.map(s=>`<span class="skill missing">${s}</span>`).join("")
+        : "No skill gaps detected.";
+}
+
+function generateRoadmap(missing){
+
+    const roadmap = document.getElementById("roadmap");
+    roadmap.innerHTML = "";
+
+    if(missing.length === 0){
+        roadmap.innerHTML = `
+        <div class="roadmap-box">
+        🎉 Excellent! You meet most professional requirements.<br><br>
+        ➤ Focus on advanced specialization<br>
+        ➤ Take leadership initiatives<br>
+        ➤ Work on innovation & research<br>
+        ➤ Build strong professional network
+        </div>`;
+        return;
+    }
+
+    roadmap.innerHTML = `
+    <div class="roadmap-box">
+
+    <div class="section-title">📚 Phase 1 — Learn Fundamentals</div>
+    ${missing.map(skill=>"• Study core concepts of " + skill + "<br>").join("")}
+
+    <div class="section-title">🛠 Phase 2 — Practical Application</div>
+    ${missing.map(skill=>"• Build hands-on projects using " + skill + "<br>").join("")}
+
+    <div class="section-title">🎓 Phase 3 — Certification</div>
+    ${missing.map(skill=>"• Complete professional certification in " + skill + "<br>").join("")}
+
+    <div class="section-title">🚀 Phase 4 — Career Integration</div>
+    • Apply skills in internships/jobs<br>
+    • Build a strong portfolio<br>
+    • Seek mentorship & peer review<br>
+    • Participate in professional communities
+
+    </div>`;
+}
+
+</script>
+
+</body>
+</html>
